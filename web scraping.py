@@ -13,7 +13,6 @@ from selenium.webdriver.chrome.options import Options
 import undetected_chromedriver as uc
 
 
-zillow= "https://www.zillow.com/albany-ny/rentals/"
 
 headers = {
     'authority': 'www.zillow.com',
@@ -32,43 +31,100 @@ headers = {
     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
 }
 
-my_user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
+#y_user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36'
 
-options = uc.ChromeOptions()
-options.add_argument("--headless")
-options.add_argument(f"user-agent={my_user_agent}")
+#options = uc.ChromeOptions()
+#options.add_argument("--headless")
+#options.add_argument(f"user-agent={my_user_agent}")
 
+page = 1
+end_page = 1
+url = ""
+url_list = []
 
-driver = webdriver.Chrome(options = options)
+while page <= end_page:
+    url = f"https://www.zillow.com/homes/for_rent/{page}_p/?searchQueryState=%7B%22pagination%22%3A%7B%22currentPage%22%3A2%7D%2C%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22west%22%3A-73.80807756509776%2C%22east%22%3A-73.70765565958018%2C%22south%22%3A42.6272726053139%2C%22north%22%3A42.679161951669904%7D%2C%22mapZoom%22%3A14%2C%22customRegionId%22%3A%225937665405X1-CR1n5j0wqkpuw1x_1745vt%22%2C%22filterState%22%3A%7B%22fr%22%3A%7B%22value%22%3Atrue%7D%2C%22fsba%22%3A%7B%22value%22%3Afalse%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22cmsn%22%3A%7B%22value%22%3Afalse%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22beds%22%3A%7B%22min%22%3A3%2C%22max%22%3A3%7D%2C%22baths%22%3A%7B%22min%22%3A1%2C%22max%22%3Anull%7D%2C%22ah%22%3A%7B%22value%22%3Atrue%7D%7D%2C%22isListVisible%22%3Atrue%7D"
+    url_list.append(url)
+    page += 1
 
+request_list = []
 
-driver.get(zillow)
+for url in url_list:
+    driver = webdriver.Chrome()
+    driver.get(url)
 
+    driver.find_element(By.TAG_NAME, 'html').send_keys(Keys.PAGE_DOWN)
+    driver.find_element(By.TAG_NAME, 'html').send_keys(Keys.PAGE_DOWN)
+    driver.find_element(By.TAG_NAME, 'html').send_keys(Keys.PAGE_DOWN)
+    driver.find_element(By.TAG_NAME, 'html').send_keys(Keys.PAGE_DOWN)
+    driver.find_element(By.TAG_NAME, 'html').send_keys(Keys.PAGE_DOWN)
+    html = driver.page_source
+    request_list.append(html)
 
-
-
-html = driver.find_element(By.TAG_NAME, 'html')
-#driver.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
-#driver.implicitly_wait(2)
-#driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-html.send_keys(Keys.END)
-time.sleep(20)
-html = driver.page_source
-
-
-# encod = response.encoding
-# contents = response.content.decode(encod)
-
-soup = BeautifulSoup(html, "html.parser")
-table1 = pd.DataFrame()
-
-data = soup.find_all('div', {'class' : "StyledPropertyCardDataWrapper-c11n-8-84-3__sc-1omp4c3-0 bKpguY property-card-data"})
-address = soup.find_all("address", {"data-test":"property-card-addr"})
-price = soup.find_all("span", {"data-test":"property-card-price" })
-
-table1['price'] = price
-table1['data'] = data
+    driver.close()
+soup_list = []
 
 
-driver.close()
-print(table1)
+for request in request_list:
+    soup = BeautifulSoup(html, "html.parser")
+    soup_list.append(soup)
+
+df_list = []
+for soup in soup_list:
+    df = pd.DataFrame()
+   
+    for i in soup:
+        df.fillna(value=0, inplace=True)
+        data = soup.find_all('div', {'class' : "StyledPropertyCardDataWrapper-c11n-8-84-3__sc-1omp4c3-0 bKpguY property-card-data"})
+        address = soup.find_all("address", {"data-test":"property-card-addr"})
+        price = soup.find_all("span", {"data-test":"property-card-price" })
+        
+            
+        beds = soup.find_all('ul', {'class' : "StyledPropertyCardHomeDetailsList-c11n-8-84-3__sc-1xvdaej-0 eYPFID"})
+        dummy = []
+        for bed in beds:
+            bed_data = [li.get_text(strip=True)for li in bed.find_all('li')]
+            print(bed_data)
+            dummy.append(bed_data)
+            
+        df['address'] = address
+        df['price'] = price
+        df['beds'] = dummy
+
+    
+        df_list.append(df)
+
+    
+
+
+df = pd.concat(df_list).reset_index().drop(columns='index')
+#df.loc[:,'beds'] = df.loc[:,'beds'].replace('<ul class="list-card-details"><li class="">', ' ', regex=True)
+
+print(df)
+
+# df['address'] = df['address'].astype(str)
+# df['price'] = df['price'].astype(str)
+df['beds'] = df['beds'].astype(str)
+
+with open('zillow.csv', 'w') as a:
+        a.write('Address\n')
+
+
+for x in range(len(address)):
+    with open('zillow.csv', "a") as f:
+       f.write(str(dummy[x]) + ";" + str(address[x]) + ";" + str(price[x]) + "\n")
+
+
+
+
+
+
+
+#df[['beds','type']] = df.beds.apply(
+    #lambda x: pd.Series(str(x).split('-')))
+#df.head()
+#df[['beds','baths']] = df['beds'].str.split(expand=True)
+
+
+
+

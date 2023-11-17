@@ -1,10 +1,14 @@
 import pandas as pd
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max.rows', None)
+
 import requests
 from bs4 import BeautifulSoup
 import time 
 import random
 from datetime import date, datetime
 
+from docx import Document
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -37,19 +41,16 @@ headers = {
 #options.add_argument("--headless")
 #options.add_argument(f"user-agent={my_user_agent}")
 
-page = 1
-end_page = 1
-url = ""
-url_list = []
 
-while page <= end_page:
-    url = f"https://www.zillow.com/homes/for_rent/{page}_p/?searchQueryState=%7B%22pagination%22%3A%7B%22currentPage%22%3A2%7D%2C%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22west%22%3A-73.80807756509776%2C%22east%22%3A-73.70765565958018%2C%22south%22%3A42.6272726053139%2C%22north%22%3A42.679161951669904%7D%2C%22mapZoom%22%3A14%2C%22customRegionId%22%3A%225937665405X1-CR1n5j0wqkpuw1x_1745vt%22%2C%22filterState%22%3A%7B%22fr%22%3A%7B%22value%22%3Atrue%7D%2C%22fsba%22%3A%7B%22value%22%3Afalse%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22cmsn%22%3A%7B%22value%22%3Afalse%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22beds%22%3A%7B%22min%22%3A3%2C%22max%22%3A3%7D%2C%22baths%22%3A%7B%22min%22%3A1%2C%22max%22%3Anull%7D%2C%22ah%22%3A%7B%22value%22%3Atrue%7D%7D%2C%22isListVisible%22%3Atrue%7D"
-    url_list.append(url)
-    page += 1
+page1 = "https://www.zillow.com/homes/for_rent/?searchQueryState=%7B%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22west%22%3A-73.85416864480968%2C%22east%22%3A-73.66156457986827%2C%22south%22%3A42.600490373602646%2C%22north%22%3A42.705910333473064%7D%2C%22mapZoom%22%3A13%2C%22customRegionId%22%3A%225937665405X1-CR1n5j0wqkpuw1x_1745vt%22%2C%22filterState%22%3A%7B%22fr%22%3A%7B%22value%22%3Atrue%7D%2C%22fsba%22%3A%7B%22value%22%3Afalse%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22cmsn%22%3A%7B%22value%22%3Afalse%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22beds%22%3A%7B%22min%22%3A3%2C%22max%22%3A3%7D%2C%22baths%22%3A%7B%22min%22%3A1%2C%22max%22%3Anull%7D%2C%22ah%22%3A%7B%22value%22%3Atrue%7D%7D%2C%22isListVisible%22%3Atrue%7D"
+page2 = "https://www.zillow.com/homes/for_rent/2_p/?searchQueryState=%7B%22pagination%22%3A%7B%22currentPage%22%3A2%7D%2C%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22west%22%3A-73.85416864480968%2C%22east%22%3A-73.66156457986827%2C%22south%22%3A42.600490373602646%2C%22north%22%3A42.705910333473064%7D%2C%22mapZoom%22%3A13%2C%22customRegionId%22%3A%225937665405X1-CR1n5j0wqkpuw1x_1745vt%22%2C%22filterState%22%3A%7B%22fr%22%3A%7B%22value%22%3Atrue%7D%2C%22fsba%22%3A%7B%22value%22%3Afalse%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22cmsn%22%3A%7B%22value%22%3Afalse%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22beds%22%3A%7B%22min%22%3A3%2C%22max%22%3A3%7D%2C%22baths%22%3A%7B%22min%22%3A1%2C%22max%22%3Anull%7D%2C%22ah%22%3A%7B%22value%22%3Atrue%7D%7D%2C%22isListVisible%22%3Atrue%7D"
+pages = [page1, page2]
+
+print(pages[1])
 
 request_list = []
 
-for url in url_list:
+for url in pages:
     driver = webdriver.Chrome()
     driver.get(url)
 
@@ -62,57 +63,94 @@ for url in url_list:
     request_list.append(html)
 
     driver.close()
-soup_list = []
 
+soup_list = []
 
 for request in request_list:
     soup = BeautifulSoup(html, "html.parser")
     soup_list.append(soup)
+print(len(soup_list))
+doc = Document()
+for n in soup_list:
+    doc.
 
-df_list = []
-for soup in soup_list:
-    df = pd.DataFrame()
-   
+doc.save('dfvnsldgv.docx')
+
+exit()
+page1_data = soup_list[0]
+page2_data = soup_list[1]
+
+
+for soup in page1_data:
     for i in soup:
-        df.fillna(value=0, inplace=True)
+        address_data = []
         data = soup.find_all('div', {'class' : "StyledPropertyCardDataWrapper-c11n-8-84-3__sc-1omp4c3-0 bKpguY property-card-data"})
-        address = soup.find_all("address", {"data-test":"property-card-addr"})
-        price = soup.find_all("span", {"data-test":"property-card-price" })
         
-            
-        beds = soup.find_all('ul', {'class' : "StyledPropertyCardHomeDetailsList-c11n-8-84-3__sc-1xvdaej-0 eYPFID"})
-        dummy = []
-        for bed in beds:
-            bed_data = [li.get_text(strip=True)for li in bed.find_all('li')]
-            print(bed_data)
-            dummy.append(bed_data)
-            
-        df['address'] = address
-        df['price'] = price
-        df['beds'] = dummy
+        
+        addresses = soup.find_all("address", {"data-test":"property-card-addr"})
+        for address in addresses:
+            a_data = address.get_text()
+            address_data.append(a_data)
+            print(a_data)
+        exit()
+        
 
-    
-        df_list.append(df)
+# for soup in soup_list:
+#     for i in soup:
+#         data = soup.find_all('div', {'class' : "StyledPropertyCardDataWrapper-c11n-8-84-3__sc-1omp4c3-0 bKpguY property-card-data"})
+        
+        
+#         addresses = soup.find_all("address", {"data-test":"property-card-addr"})
+#         for address in addresses:
+#             a_data = address.get_text()
+#             address_data.append(a_data)
+        
 
-    
+#         prices = soup.find_all("span", {"data-test":"property-card-price" })
+#         for price in prices:
+#             p_data = price.get_text(strip=True)
+#             prices_data.append(p_data)
+            
+
+#         beds = soup.find_all('ul', {'class' : "StyledPropertyCardHomeDetailsList-c11n-8-84-3__sc-1xvdaej-0 eYPFID"})
+#         #This cleans the data and appends it to dummy
+#         ## Why does not just .get_text work
+#         # Problem - bed.get_text() combines the bed bath and sq_ft
+#         for bed in beds:
+#             bed_datas = [li.get_text(strip=True)for li in bed.find_all('li')]
+#             dummy.append(bed_datas)
+
+#         df_list.append(df)
+
+
 
 
 df = pd.concat(df_list).reset_index().drop(columns='index')
-#df.loc[:,'beds'] = df.loc[:,'beds'].replace('<ul class="list-card-details"><li class="">', ' ', regex=True)
 
-print(df)
+#creates a new data frame with seperate columns from a column
+df1 = pd.DataFrame(dummy, columns=['beds', 'bath', 'sq_ft'])
 
-# df['address'] = df['address'].astype(str)
-# df['price'] = df['price'].astype(str)
-df['beds'] = df['beds'].astype(str)
+# extracts the colums
+xyz = df1['beds']
+baths = df1['bath']
+sq_ft = df1['sq_ft']
 
-with open('zillow.csv', 'w') as a:
-        a.write('Address\n')
+#Inserts the extracted columns
+df.insert(0, 'beds', xyz)
+df.insert(1, 'baths', baths)
+df.insert(2, 'sq_ft', sq_ft)
+
+#['beds'] = df['beds']
+# df['baths'] = df['baths'].astype(str)
+# df['sq_ft'] = df['sq_ft'].astype(str) 
+#df['address'] = df['address'].text
+# df['price'] = df['price'].astype(str) 
 
 
-for x in range(len(address)):
-    with open('zillow.csv', "a") as f:
-       f.write(str(dummy[x]) + ";" + str(address[x]) + ";" + str(price[x]) + "\n")
+
+
+
+df.to_csv('scraped_zillow_data.csv', index=False)
 
 
 
